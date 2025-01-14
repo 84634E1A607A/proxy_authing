@@ -1,24 +1,20 @@
-
-IP_ADDRESS = "192.168.1.2"
-SERVER_ADDRESS = "192.168.1.1"
-CLIENT_IDENTIFIER = b'\x01\x02\x03\x04'
-
 import ipaddress
 import random
 import time
 import hashlib
+import argparse
+import os
+import re
+import socket
+import psutil
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
-
-from setuptools.command.build_py import assert_relative
 
 # We use UDP port 67 (DHCP Server) to send data packets. The channel is single-directional
 # As for authentication, we use asymmetric encryption. The client sends a request packet encrypted with a certain
 # pubkey identified by clientid. The server decrypts the packet and verifies the data. If the data is valid, the server
 # executes proxy auth command.
-
 # The data contains a timestamp, client's IP address.
-
 # Magic cookie to identify this as custom protocol
 YIADDR = b'\xfe\x4e\x08\xce'
 
@@ -76,17 +72,50 @@ def construct_dhcp_request_packet(ip_address: ipaddress.IPv4Address,
     return packet
 
 
-rsa_key = rsa.generate_private_key(public_exponent=65537, key_size=1024)
-rsa_pubkey = rsa_key.public_key().public_bytes(encoding=serialization.Encoding.DER, format=serialization.PublicFormat.SubjectPublicKeyInfo)
-pubkey = serialization.load_der_public_key(rsa_pubkey)
+parser = argparse.ArgumentParser()
+parser.add_argument('--clientfile', type=str, required=True)
+parser.add_argument('--server', type=str, required=True)
+parser.add_argument('--client-ip-range', type=str, action='append')
+args = parser.parse_args()
 
-print(rsa_key.private_bytes(encoding=serialization.Encoding.DER, format=serialization.PrivateFormat.TraditionalOpenSSL, encryption_algorithm=serialization.NoEncryption()).hex())
+clientid = os.path.basename(args.clientfile).split('.')[0]
+if not re.match(r'^[0-9a-f]{8}$', clientid):
+    raise ValueError('Invalid client id')
 
-p = construct_dhcp_request_packet(ipaddress.IPv4Address(IP_ADDRESS), ipaddress.IPv4Address(SERVER_ADDRESS), CLIENT_IDENTIFIER, pubkey)
+clientid = bytes.fromhex(clientid)
+
+with open(args.clientfile) as f:
+    pubkey = serialization.load_der_public_key(bytes.fromhex(f.read()))
+
+if not re.match(r'^\d+\.\d+\.\d+\.\d+$', args.server):
+    print(f"Trying to resolve IP address for server {args.server}")
+    args.server = socket.gethostbyname(args.server)
+
+if args.client_ip_range is not None:
+    client_nw = [ipaddress.IPv4Network(x) for x in args.client_ip_range]
+else:
+    client_nw = [ipaddress.IPv4Network('0.0.0.0/0')]
+
+packets = []
+# Enumerate all network interfaces and find IP address
+for interface, addrs in psutil.net_if_addrs().items():
+    for addr in addrs:
+        if addr.family == socket.AF_INET:
+            ip_address = ipaddress.IPv4Address(addr.address)
+            if any([ip_address in nw for nw in client_nw]):
+                break
+    else:
+        continue
+
+    print(f"Found IP address {ip_address} on interface {interface}")
+    p = construct_dhcp_request_packet(ipaddress.IPv4Address(ip_address), ipaddress.IPv4Address(args.server), clientid, pubkey)
+    packets.append(p)
+
+if len(packets) == 0:
+    raise ValueError('No suitable IP address found')
 
 # Use udp to send the packet to the server port 67
-import socket
+print(f"Sending packet to {args.server}:67")
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.sendto(p, (SERVER_ADDRESS, 67))
-
-print(p.hex())
+for p in packets:
+    sock.sendto(p, (args.server, 67))
