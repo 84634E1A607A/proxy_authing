@@ -122,7 +122,8 @@ for f in os.listdir(args.client_dir):
 
             privkey_line = -1
             for l, line in enumerate(lines):
-                if len(line.strip()) == 1218:
+                line = line.split('#')[0]
+                if len(line.strip()) >= 1200:
                     privkey_line = l
                     break
 
