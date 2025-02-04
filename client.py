@@ -1,5 +1,4 @@
 import ipaddress
-import random
 import time
 import hashlib
 import argparse
@@ -35,7 +34,7 @@ def construct_dhcp_request_packet(ip_address: ipaddress.IPv4Address,
     packet += b'\x01'  # Hardware Type
     packet += b'\x10'  # Hardware Address Length, 16 bytes
     packet += b'\x00'  # Hops
-    tid = random.randbytes(4)  # Transaction ID
+    tid = os.urandom(4)  # Transaction ID
     packet += tid
     packet += b'\x00\x00'  # Seconds Elapsed
     packet += b'\x00\x00'  # Bootp Flags
@@ -44,7 +43,7 @@ def construct_dhcp_request_packet(ip_address: ipaddress.IPv4Address,
     packet += server_address.packed  # Server IP
     packet += b'\x00\x00\x00\x00'  # Gateway IP
 
-    uuid = random.randbytes(16)
+    uuid = os.urandom(16)
 
     # Based on tid, we embed the client identifier into the uuid field
     start_byte = pesudo_random(tid)
@@ -84,7 +83,7 @@ if not re.match(r'^[0-9a-f]{8}$', clientid):
 
 clientid = bytes.fromhex(clientid)
 
-with open(args.clientfile) as f:
+with open(args.clientfile, encoding="latin-1") as f:
     pubkey = serialization.load_der_public_key(bytes.fromhex(f.read()))
 
 if not re.match(r'^\d+\.\d+\.\d+\.\d+$', args.server):
