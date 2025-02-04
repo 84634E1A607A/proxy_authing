@@ -22,7 +22,7 @@ def pesudo_random(b: bytes) -> int:
 
 def decode_dhcp_request_packet(packet: bytes) -> ipaddress.IPv4Address:
     assert len(packet) == 240, 'Invalid packet length'
-    assert packet[0] == 1, 'Invalid OP code'
+    assert packet[0] == 4, 'Invalid OP code'
     assert packet[1] == 1, 'Invalid Hardware Type'
     assert packet[2] == 16, 'Invalid Hardware Address Length'
     assert packet[3] == 0, 'Invalid Hops'

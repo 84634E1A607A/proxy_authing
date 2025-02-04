@@ -30,7 +30,7 @@ def construct_dhcp_request_packet(ip_address: ipaddress.IPv4Address,
 
     packet = b''
 
-    packet += b'\x01'  # Request OP
+    packet += b'\x04'  # Request OP
     packet += b'\x01'  # Hardware Type
     packet += b'\x10'  # Hardware Address Length, 16 bytes
     packet += b'\x00'  # Hops
