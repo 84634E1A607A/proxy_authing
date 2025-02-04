@@ -61,6 +61,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--new-client')
 parser.add_argument('--client-dir', default='authorized_clients')
 parser.add_argument('--bind-address', default='0.0.0.0')
+parser.add_argument('--bind-port', default=67, type=int)
 args = parser.parse_args()
 
 if args.new_client is not None:
@@ -138,7 +139,7 @@ for f in os.listdir(args.client_dir):
 # --- --- --- Server Socket Code --- --- ---
 
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-server.bind((args.bind_address, 67))
+server.bind((args.bind_address, args.bind_port))
 
 while True:
     try:
