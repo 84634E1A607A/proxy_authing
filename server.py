@@ -85,6 +85,8 @@ if args.new_client is not None:
 """)
         print(f"Client {args.new_client} created with id {clientid.hex()}")
 
+    os.chmod(clientfile, 0o600)
+
     with open(clientfile + '.pub', 'w') as f:
         f.write(f"{rsa_pubkey}\n")
 
