@@ -3,7 +3,7 @@ Description=TUNET proxy authing server
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 server.py --bind-address 101.6.5.200
+ExecStart=/usr/bin/python3 server.py
 KillSignal=SIGINT
 Environment='PYTHONUNBUFFERED=1'
 WorkingDirectory=/path/to/your/proxy_authing

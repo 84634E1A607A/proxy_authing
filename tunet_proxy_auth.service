@@ -1,0 +1,9 @@
+[Unit]
+Description=Tunet proxy authing client
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 client.py --clientfile CLIENTFILE.pub
+WorkingDirectory=/path/to/your/proxy_authing
+

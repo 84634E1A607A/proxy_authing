@@ -1,0 +1,1 @@
+SUBSYSTEM=="net", ACTION=="change", RUN+="/usr/bin/systemctl start tunet_proxy_auth.service"
