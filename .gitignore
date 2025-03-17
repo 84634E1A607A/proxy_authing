@@ -1,3 +1,4 @@
 authorized_clients/
 **/__pycache__/
 *.pub
+.idea/
